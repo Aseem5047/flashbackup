@@ -22,6 +22,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { enterAmountSchema } from "@/lib/validator";
 import { arrowLeft, arrowRight } from "@/constants/icons";
+import { logEvent } from "firebase/analytics";
+import { analytics } from "@/lib/firebase";
 
 interface Transaction {
 	_id: string;
@@ -71,6 +73,10 @@ const Payment: React.FC = () => {
 	// 3. Define a submit handler.
 	function onSubmit(values: z.infer<typeof enterAmountSchema>) {
 		const rechargeAmount = values.rechargeAmount;
+		logEvent(analytics, "payment_initiated", {
+			userId: user?.publicMetadata?.userId,
+			amount: rechargeAmount,
+		});
 		router.push(`/recharge?amount=${rechargeAmount}`);
 	}
 

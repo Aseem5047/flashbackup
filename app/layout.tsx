@@ -10,8 +10,9 @@ import { Cursor, Typewriter } from "react-simple-typewriter";
 import MovePageToTop from "@/components/shared/MovePageToTop";
 import { Analytics } from "@vercel/analytics/react";
 import { GoogleTagManager } from "@next/third-parties/google";
-import Script from "next/script";
 
+import Script from "next/script";
+import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 export default function RootLayout({
 	children,
 }: Readonly<{
@@ -87,22 +88,8 @@ export default function RootLayout({
 
 	return (
 		<html lang="en">
-			<head>
-				<Script
-					strategy="afterInteractive"
-					async
-					src="https://www.googletagmanager.com/gtag/js?id=G-WPMN8815TK"
-				></Script>
-				<Script id="google-analytics" strategy="afterInteractive">
-					{`
-						window.dataLayer = window.dataLayer || [];
-						function gtag(){dataLayer.push(arguments);}
-						gtag('js', new Date());
-						gtag('config', 'G-WPMN8815TK');
-					`}
-				</Script>
-			</head>
-			<GoogleTagManager gtmId="G-WPMN8815TK" />
+			<GoogleAnalytics />
+			<GoogleTagManager gtmId={`${process.env.NEXT_PUBLIC_MEASUREMENT_ID}`} />
 
 			<ClerkProvider
 				appearance={{
