@@ -96,7 +96,9 @@ export default function RootLayout({
 						window.dataLayer = window.dataLayer || [];
 						function gtag(){dataLayer.push(arguments);}
 						gtag('js', new Date());
-						gtag('config', 'G-WPMN8815TK');
+						gtag('config', 'G-WPMN8815TK', {
+						'cookie_domain': 'flashcall.me'
+					});
 					`}
 				</Script>
 			</head>
