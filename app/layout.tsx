@@ -10,8 +10,8 @@ import { Cursor, Typewriter } from "react-simple-typewriter";
 import MovePageToTop from "@/components/shared/MovePageToTop";
 import { Analytics } from "@vercel/analytics/react";
 import { GoogleTagManager } from "@next/third-parties/google";
-
 import Script from "next/script";
+
 export default function RootLayout({
 	children,
 }: Readonly<{
