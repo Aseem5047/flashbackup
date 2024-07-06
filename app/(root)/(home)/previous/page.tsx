@@ -8,8 +8,8 @@ import ChatList from "@/components/calls/ChatList";
 
 const PreviousPage = () => {
 	const [historyType, setHistoryType] = useState<"Calls" | "Chats">("Calls");
-	const options: ("Calls" | "Chats")[] = ["Calls", "Chats"];
 	const [isSticky, setIsSticky] = useState(false);
+	const options: ("Calls" | "Chats")[] = ["Calls", "Chats"];
 	const stickyRef = useRef<HTMLDivElement>(null);
 
 	const handleScroll = () => {

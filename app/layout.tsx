@@ -9,8 +9,9 @@ import React, { useState, useEffect } from "react";
 import { Cursor, Typewriter } from "react-simple-typewriter";
 import MovePageToTop from "@/components/shared/MovePageToTop";
 import { Analytics } from "@vercel/analytics/react";
-import Script from "next/script"; // Import the Script component from next/script
+import { GoogleTagManager } from "@next/third-parties/google";
 
+import Script from "next/script";
 export default function RootLayout({
 	children,
 }: Readonly<{
@@ -97,12 +98,12 @@ export default function RootLayout({
 						window.dataLayer = window.dataLayer || [];
 						function gtag(){dataLayer.push(arguments);}
 						gtag('js', new Date());
-						gtag('config', 'G-WPMN8815TK', {
-						'cookie_domain': 'app.flashcall.me'
-					});
+						gtag('config', 'G-WPMN8815TK');
 					`}
 				</Script>
 			</head>
+			<GoogleTagManager gtmId="G-WPMN8815TK" />
+
 			<ClerkProvider
 				appearance={{
 					layout: {
