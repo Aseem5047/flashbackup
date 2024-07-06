@@ -89,14 +89,14 @@ export default function RootLayout({
 			<head>
 				<Script
 					async
-					src="https://www.googletagmanager.com/gtag/js?id=G-WPMN8815TK"
+					src="https://www.googletagmanager.com/gtag/js?id=G-M670XD6NYL"
 				></Script>
 				<Script id="google-analytics">
 					{`
 						window.dataLayer = window.dataLayer || [];
 						function gtag(){dataLayer.push(arguments);}
 						gtag('js', new Date());
-						gtag('config', 'G-WPMN8815TK', {
+						gtag('config', 'G-M670XD6NYL', {
 						'cookie_domain': 'flashcall.me'
 					});
 					`}
