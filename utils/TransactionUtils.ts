@@ -1,4 +1,6 @@
 import { getUserById } from "@/lib/actions/creator.actions";
+import { analytics } from "@/lib/firebase";
+import { logEvent } from "firebase/analytics";
 
 // Define the transaction logic in a utility function
 export const handleTransaction = async ({
@@ -92,6 +94,11 @@ export const handleTransaction = async ({
 
 		// remove the activeCallId after transaction is done otherwise user will be redirected to this page and then transactons will take place
 		localStorage.removeItem("activeCallId");
+		logEvent(analytics, "call_ended", {
+			callId: call.id,
+			duration: duration,
+			type: call?.type === "default" ? "video" : "audio",
+		});
 	} catch (error) {
 		console.error("Error handling wallet changes:", error);
 		toast({
