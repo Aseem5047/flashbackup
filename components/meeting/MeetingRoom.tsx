@@ -14,7 +14,6 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { Users } from "lucide-react";
 import EndCallButton from "../calls/EndCallButton";
-import { useUser } from "@clerk/nextjs";
 import CallTimer from "../calls/CallTimer";
 import { useCallTimerContext } from "@/lib/context/CallTimerContext";
 import { useToast } from "../ui/use-toast";
@@ -27,6 +26,8 @@ import AudioDeviceList from "../calls/AudioDeviceList";
 import CustomParticipantViewUI from "../calls/CustomParticipantViewUI";
 import { logEvent } from "firebase/analytics";
 import { analytics } from "@/lib/firebase";
+import CreatorCallTimer from "../creator/CreatorCallTimer";
+import { useCurrentUsersContext } from "@/lib/context/CurrentUsersContext";
 
 type CallLayoutType = "grid" | "speaker-bottom";
 
@@ -53,7 +54,7 @@ const MeetingRoom = () => {
 		useCallStateHooks();
 	const [hasJoined, setHasJoined] = useState(false);
 	const [showAudioDeviceList, setShowAudioDeviceList] = useState(false);
-	const { user } = useUser();
+	const { currentUser } = useCurrentUsersContext();
 	const call = useCall();
 	const callEndedAt = useCallEndedAt();
 	const callHasEnded = !!callEndedAt;
@@ -90,13 +91,11 @@ const MeetingRoom = () => {
 				try {
 					await call?.join();
 					setHasJoined(true);
-					logEvent(analytics, 'call_connected', {
-						userId: user?.publicMetadata?.userId,
-						// creatorId: creator._id,
+					logEvent(analytics, "call_connected", {
+						userId: currentUser?._id,
 					});
 				} catch (error: any) {
 					if (error.message !== "Illegal State: Already joined") {
-						// console.warn("Error joining call:", error);
 						console.clear();
 					}
 				}
@@ -114,8 +113,9 @@ const MeetingRoom = () => {
 	useEffect(() => {
 		let timeoutId: NodeJS.Timeout;
 
-		participantCount === 2 &&
+		if (participantCount === 2) {
 			call?.on("call.session_participant_left", handleCallRejected);
+		}
 
 		if (participantCount < 2 || anyModalOpen) {
 			timeoutId = setTimeout(async () => {
@@ -130,7 +130,6 @@ const MeetingRoom = () => {
 		return () => clearTimeout(timeoutId);
 	}, [participantCount, anyModalOpen, call]);
 
-	// Function to toggle front and back camera
 	const toggleCamera = async () => {
 		if (call && call.camera) {
 			try {
@@ -141,14 +140,10 @@ const MeetingRoom = () => {
 		}
 	};
 
-	// Memoized Call Layout
 	const CallLayout = useMemo(() => {
 		switch (layout) {
 			case "grid":
-				return (
-					<PaginatedGridLayout />
-					// ParticipantViewUI={<CustomParticipantViewUI />}
-				);
+				return <PaginatedGridLayout />;
 			default:
 				return (
 					<SpeakerLayout
@@ -160,15 +155,15 @@ const MeetingRoom = () => {
 		}
 	}, [layout]);
 
-	const isMeetingOwner =
-		user?.publicMetadata?.userId === call?.state?.createdBy?.id;
+	const isMeetingOwner = currentUser?._id === call?.state?.createdBy?.id;
 
-	if (callingState !== CallingState.JOINED)
+	if (callingState !== CallingState.JOINED) {
 		return (
 			<section className="w-full h-screen flex items-center justify-center">
 				<SinglePostLoader />
 			</section>
 		);
+	}
 
 	return (
 		<section className="relative h-screen w-full overflow-hidden pt-4 text-white bg-dark-2">
@@ -184,8 +179,13 @@ const MeetingRoom = () => {
 				)}
 			</div>
 
-			{!callHasEnded && isMeetingOwner && (
-				<CallTimer handleCallRejected={handleCallRejected} />
+			{!callHasEnded && isMeetingOwner ? (
+				<CallTimer
+					handleCallRejected={handleCallRejected}
+					isVideoCall={isVideoCall}
+				/>
+			) : (
+				call && <CreatorCallTimer callId={call.id} />
 			)}
 
 			{/* Call Controls */}

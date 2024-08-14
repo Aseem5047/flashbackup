@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useUser } from "@clerk/nextjs";
 import {
 	StreamCall,
 	StreamTheme,
@@ -18,16 +17,14 @@ import { Cursor, Typewriter } from "react-simple-typewriter";
 import { useWalletBalanceContext } from "@/lib/context/WalletBalanceContext";
 import SinglePostLoader from "@/components/shared/SinglePostLoader";
 import ContentLoading from "@/components/shared/ContentLoading";
-import { logEvent } from "firebase/analytics";
-import { analytics } from "@/lib/firebase";
+import { useCurrentUsersContext } from "@/lib/context/CurrentUsersContext";
 
 const MeetingPage = () => {
 	const { id } = useParams();
-	// const searchParams = useSearchParams();
 	const router = useRouter();
 	const { toast } = useToast();
 	const { call, isCallLoading } = useGetCallById(id);
-	const { user } = useUser();
+	const { currentUser } = useCurrentUsersContext();
 
 	useEffect(() => {
 		if (!isCallLoading && !call) {
@@ -37,7 +34,7 @@ const MeetingPage = () => {
 			});
 			setTimeout(() => {
 				router.push("/");
-			}, 3000);
+			}, 1500);
 		}
 	}, [isCallLoading, call, router, toast]);
 
@@ -55,8 +52,7 @@ const MeetingPage = () => {
 	const expert = call?.state?.members?.find(
 		(member) => member.custom.type === "expert"
 	);
-	const isMeetingOwner =
-		user?.publicMetadata?.userId === call?.state?.createdBy?.id;
+	const isMeetingOwner = currentUser?._id === call?.state?.createdBy?.id;
 
 	return (
 		<main className="h-full w-full">
@@ -66,6 +62,7 @@ const MeetingPage = () => {
 						isVideoCall={isVideoCall}
 						isMeetingOwner={isMeetingOwner}
 						expert={expert}
+						call={call}
 					>
 						<MeetingRoomWrapper toast={toast} router={router} call={call} />
 					</CallTimerProvider>
@@ -94,10 +91,9 @@ const CallEnded = ({ toast, router, call }: any) => {
 	const [loading, setLoading] = useState(false);
 	const [toastShown, setToastShown] = useState(false);
 	const transactionHandled = useRef(false);
-	const { user } = useUser();
+	const { currentUser } = useCurrentUsersContext();
 
-	const isMeetingOwner =
-		user?.publicMetadata?.userId === call?.state?.createdBy?.id;
+	const isMeetingOwner = currentUser?._id === call?.state?.createdBy?.id;
 
 	useEffect(() => {
 		const handleCallEnd = async () => {
@@ -148,34 +144,20 @@ const CallEnded = ({ toast, router, call }: any) => {
 			});
 		};
 
-		if (!callEndedAt || !callStartsAt) {
-			if (!toastShown) {
-				toast({
-					title: "Call Has Ended",
-					description: "Call data is missing. Redirecting...",
-				});
-				setToastShown(true);
-			}
-			setTimeout(() => {
-				router.push("/");
-			}, 3000);
-			return;
-		}
-
 		if (isMeetingOwner && !transactionHandled.current) {
 			handleCallEnd();
-		} else {
-			router.push(`/feedback/${call?.id}`);
+		} else if (!isMeetingOwner) {
+			router.push(`/`);
 		}
 	}, [
+		isMeetingOwner,
 		callEndedAt,
 		callStartsAt,
-		isMeetingOwner,
 		call?.id,
-		router,
 		toast,
-		toastShown,
+		router,
 		updateWalletBalance,
+		toastShown,
 	]);
 
 	if (loading) {

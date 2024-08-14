@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import UserFeedback from "./UserFeedback";
 import { getCallFeedbacks } from "@/lib/actions/feedback.actions";
-import { useUser } from "@clerk/nextjs";
 import { Rating } from "@smastrom/react-rating";
 import {
 	Dialog,
@@ -13,10 +12,11 @@ import {
 } from "@/components/ui/dialog";
 import Image from "next/image";
 import { formatDateTime } from "@/lib/utils";
+import { useCurrentUsersContext } from "@/lib/context/CurrentUsersContext";
 
 const FeedbackCheck = ({ callId }: { callId: string }) => {
 	const [feedbackExists, setFeedbackExists] = useState<boolean | null>(null);
-	const { user } = useUser();
+	const { currentUser } = useCurrentUsersContext();
 
 	const [userFeedbacks, setUserFeedbacks] = useState<any[] | null>(null);
 	const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -36,7 +36,7 @@ const FeedbackCheck = ({ callId }: { callId: string }) => {
 
 			setFeedbackExists(hasFeedback);
 
-			if (user && hasFeedback) {
+			if (currentUser && hasFeedback) {
 				const filteredFeedbacks = response
 					.map((feedback: any) => feedback.feedbacks)
 					.flat();
@@ -49,10 +49,10 @@ const FeedbackCheck = ({ callId }: { callId: string }) => {
 	};
 
 	useEffect(() => {
-		if (user) {
+		if (currentUser?._id) {
 			checkFeedback();
 		}
-	}, [callId, user]);
+	}, [callId, currentUser?._id]);
 
 	if (feedbackExists === null) {
 		return (
@@ -69,6 +69,8 @@ const FeedbackCheck = ({ callId }: { callId: string }) => {
 			</div>
 		);
 	}
+
+	// console.log(userFeedbacks);
 
 	return feedbackExists && userFeedbacks && userFeedbacks.length > 0 ? (
 		<div className="animate-enterFromRight lg:animate-enterFromBottom w-fit flex items-center justify-start md:justify-end">
@@ -112,8 +114,11 @@ const FeedbackCheck = ({ callId }: { callId: string }) => {
 									<div className="flex items-center justify-start w-full gap-2">
 										<div className="flex items-center justify-start gap-2">
 											<Image
-												src={feedback.clientId.photo}
-												alt={feedback.clientId.username}
+												src={
+													feedback?.clientId?.photo ||
+													"/images/defaultProfileImage.png"
+												}
+												alt={feedback?.clientId?.username}
 												width={44}
 												height={44}
 												className="w-5 h-5 rounded-full"
@@ -124,12 +129,12 @@ const FeedbackCheck = ({ callId }: { callId: string }) => {
 											/>
 
 											<span className="text-xs">
-												{feedback.clientId.username}
+												{feedback?.clientId?.username}
 											</span>
 										</div>
 										<span className="text-xs">|</span>
 										<span className="text-xs">
-											{formatDateTime(feedback.createdAt).dateTime}
+											{formatDateTime(feedback?.createdAt).dateTime}
 										</span>
 									</div>
 								</div>

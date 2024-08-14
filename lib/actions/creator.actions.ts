@@ -9,9 +9,17 @@ import { handleError } from "@/lib/utils";
 import { CreateCreatorParams, UpdateCreatorParams } from "@/types";
 import Creator from "../database/models/creator.model";
 
-export async function createUser(user: CreateCreatorParams) {
+export async function createCreatorUser(user: CreateCreatorParams) {
 	try {
 		await connectToDatabase();
+
+		// Check for existing user with the same email or username
+		const existingUser = await Creator.findOne({
+			$or: [{ username: user.username, phone: user.phone }],
+		});
+		if (existingUser) {
+			return { error: "User with the same username already exists" };
+		}
 
 		const newUser = await Creator.create(user);
 		// console.log(newUser);
@@ -34,7 +42,7 @@ export async function getUsers() {
 	}
 }
 
-export async function getUserById(userId: string) {
+export async function getCreatorById(userId: string) {
 	try {
 		await connectToDatabase();
 
@@ -60,9 +68,24 @@ export async function getUserByPhone(phone: string) {
 	}
 }
 
-export async function updateUser(userId: string, user: UpdateCreatorParams) {
+export async function updateCreatorUser(
+	userId: string,
+	user: UpdateCreatorParams
+) {
 	try {
 		await connectToDatabase();
+
+		// Check for existing user with the same email or username
+		// const existingUser = await Creator.findOne({
+		// 	$or: [{ username: user.username }],
+		// });
+
+		// if (existingUser) {
+		// 	return { error: "User with the same username already exists" };
+		// }
+
+		console.log("Trying to update user");
+
 		const updatedUser = await Creator.findByIdAndUpdate(userId, user, {
 			new: true,
 		});
@@ -71,14 +94,14 @@ export async function updateUser(userId: string, user: UpdateCreatorParams) {
 			throw new Error("User not found"); // Throw error if user is not found
 		}
 
-		return JSON.parse(JSON.stringify(updatedUser));
+		return JSON.parse(JSON.stringify({ updatedUser }));
 	} catch (error) {
 		console.error("Error updating user:", error); // Log the error
 		throw new Error("User update failed"); // Throw the error to be caught by the caller
 	}
 }
 
-export async function deleteUser(userId: string) {
+export async function deleteCreatorUser(userId: string) {
 	try {
 		await connectToDatabase();
 

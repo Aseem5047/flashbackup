@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { connectToDatabase } from "@/lib/database";
 import { handleError } from "@/lib/utils";
 import CallFeedbacks from "../database/models/callFeedbacks.model";
@@ -14,6 +13,8 @@ export async function createFeedback({
 	feedbackText,
 	callId,
 	createdAt,
+	showFeedback,
+	position,
 }: {
 	creatorId: string;
 	clientId: string;
@@ -21,6 +22,8 @@ export async function createFeedback({
 	feedbackText: string;
 	callId: string;
 	createdAt: Date;
+	showFeedback?: boolean;
+	position?: number;
 }) {
 	try {
 		await connectToDatabase();
@@ -30,7 +33,9 @@ export async function createFeedback({
 				clientId,
 				rating,
 				feedback: feedbackText,
-				createdAt: createdAt, // Manually setting the createdAt field
+				createdAt: createdAt,
+				showFeedback: showFeedback,
+				position: position || -1,
 			};
 
 			const existingCallFeedback = await CallFeedbacks.findOne({
@@ -62,7 +67,7 @@ export async function createFeedback({
 			}
 		}
 
-		revalidatePath("/path-to-revalidate");
+		// revalidatePath("/");
 
 		return { success: true };
 	} catch (error: any) {
@@ -95,17 +100,30 @@ export async function getCallFeedbacks(callId?: string, creatorId?: string) {
 			query.creatorId = creatorId;
 		}
 
-		const feedbacks = await CallFeedbacks.find(query, { feedbacks: 1 })
+		const feedbacks = await CallFeedbacks.find(query, {
+			callId: 1,
+			feedbacks: 1,
+		})
 			.populate("creatorId")
 			.populate("feedbacks.clientId")
 			.lean();
 
-		// Sort feedbacks by createdAt in descending order
-		feedbacks.forEach((feedback: any) => {
-			feedback.feedbacks.sort(
-				(a: any, b: any) =>
-					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-			);
+		feedbacks.sort((a, b) => {
+			// First, sort by position if neither are -1
+			if (a.position !== -1 && b.position !== -1) {
+				return a.position - b.position;
+			}
+
+			// If one of the positions is -1, sort that one after the other
+			if (a.position === -1 && b.position !== -1) {
+				return 1; // 'a' should be after 'b'
+			}
+			if (b.position === -1 && a.position !== -1) {
+				return -1; // 'b' should be after 'a'
+			}
+
+			// If both have position -1, sort by createdAt
+			return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
 		});
 
 		// Return the feedbacks as JSON

@@ -22,7 +22,7 @@ export async function addMoney({ userId, userType, amount }: WalletParams) {
 		if (!user) throw new Error("User not found");
 
 		// Ensure amount is a number
-		const numericAmount = Number(amount);
+		const numericAmount = Math.round(Number(amount) * 100) / 100;
 		if (isNaN(numericAmount)) {
 			throw new Error("Amount must be a number");
 		}
@@ -46,6 +46,22 @@ export async function addMoney({ userId, userType, amount }: WalletParams) {
 				amount: numericAmount,
 				type: "credit",
 			}));
+
+		if (user.referredBy && user.referralAmount > 0) {
+			const referrer = await Creator.findOne({ referralId: user.referredBy });
+			if (referrer) {
+				const referralBonus = (5 / 100) * numericAmount;
+				referrer.walletBalance = Number(referrer.walletBalance) + referralBonus;
+				await referrer.save();
+				await Wallet.findOneAndUpdate(
+					{ userId: referrer._id, userType: "Creator" },
+					{ $inc: { balance: referralBonus } },
+					{ new: true, upsert: true }
+				);
+				user.referralAmount = Number(user.referralAmount) - referralBonus;
+				await user.save();
+			}
+		}
 
 		return JSON.parse(JSON.stringify(wallet));
 	} catch (error) {
@@ -75,7 +91,7 @@ export async function processPayout({
 		if (user.walletBalance < amount) throw new Error("Insufficient balance");
 
 		// Ensure amount is a number
-		const numericAmount = Number(amount);
+		const numericAmount = Math.round(Number(amount) * 100) / 100;
 		if (isNaN(numericAmount)) {
 			throw new Error("Amount must be a number");
 		}
@@ -134,6 +150,30 @@ export async function getTransactionsByUserId(
 	}
 }
 
+export async function getCreatorTransactionsByUserId(
+	userId: string,
+	page = 1
+	// limit = 10
+) {
+	try {
+		await connectToDatabase();
+		// const skip = (page - 1) * limit;
+
+		const transactions = await Transaction.find({ userId })
+			.sort({ createdAt: -1 })
+			// .skip(skip)
+			// .limit(limit)
+			.lean();
+
+		const totalTransactions = await Transaction.countDocuments({ userId });
+
+		return { transactions, totalTransactions };
+	} catch (error) {
+		console.error(error);
+		handleError(error);
+	}
+}
+
 export async function getTransactionsByType(type: "debit" | "credit") {
 	try {
 		await connectToDatabase();
@@ -169,6 +209,94 @@ export async function getTransactionsByUserIdAndType(
 		});
 
 		return { transactions, totalTransactions };
+	} catch (error) {
+		console.error(error);
+		handleError(error);
+	}
+}
+
+export async function getCreatorTransactionsByUserIdAndType(
+	userId: string,
+	type: "debit" | "credit",
+	page = 1
+	// limit = 10
+) {
+	try {
+		await connectToDatabase();
+		// const skip = (page - 1) * limit;
+
+		const transactions = await Transaction.find({ userId, type })
+			.sort({ createdAt: -1 })
+			// .skip(skip)
+			// .limit(limit)
+			.lean();
+
+		const totalTransactions = await Transaction.countDocuments({
+			userId,
+			type,
+		});
+
+		return { transactions, totalTransactions };
+	} catch (error) {
+		console.error(error);
+		handleError(error);
+	}
+}
+
+export async function getAllTransactionsByUserId(userId: string) {
+	try {
+		await connectToDatabase();
+		const transactions = await Transaction.find({ userId })
+			.sort({ createdAt: -1 })
+			.lean();
+		return { transactions };
+	} catch (error) {
+		console.error(error);
+		handleError(error);
+	}
+}
+
+export async function getUsersTransactionsByType(
+	userId: string,
+	type: "debit" | "credit"
+) {
+	try {
+		await connectToDatabase();
+
+		const transactions = await Transaction.find({ userId, type })
+			.sort({ createdAt: -1 })
+			.lean();
+
+		return { transactions };
+	} catch (error) {
+		console.error(error);
+		handleError(error);
+	}
+}
+
+export async function getTransactionsByUserIdAndDate(
+	userId: string,
+	date: string
+) {
+	try {
+		await connectToDatabase();
+
+		// Convert the provided date string to a Date object
+		const targetDate = new Date(date);
+		const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
+		const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+
+		const transactions = await Transaction.find({
+			userId,
+			createdAt: {
+				$gte: startOfDay,
+				$lte: endOfDay,
+			},
+		})
+			.sort({ createdAt: -1 })
+			.lean();
+
+		return { transactions };
 	} catch (error) {
 		console.error(error);
 		handleError(error);
